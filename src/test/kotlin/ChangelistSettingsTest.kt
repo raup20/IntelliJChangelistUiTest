@@ -25,6 +25,8 @@ import com.intellij.driver.sdk.ui.xQuery
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.awt.event.KeyEvent
+import org.junit.jupiter.api.Assertions.assertTrue
+
 
 
 
@@ -97,15 +99,23 @@ class ChangelistSettingsTest {
 
                         val checkboxText = "Create changelists automatically"
 
-                        val checkbox = x(xQuery { byAccessibleName(checkboxText) })
-                            .waitFound()
+                        val checkbox = x(xQuery {
+                            and(
+                                byType("javax.swing.JCheckBox"),
+                                byVisibleText(checkboxText)
+                            )
+                        }).waitFound()
 
                         checkbox.click()
 
                         Thread.sleep(500)
 
-                        x(xQuery { byAccessibleName(checkboxText) })
-                            .waitFound()
+                        assertTrue(
+                            checkbox.withComponent { component ->
+                                driver.cast(component, SwingAbstractButton::class).isSelected()
+                            },
+                            "The '$checkboxText' checkbox should be selected"
+                        )
 
                         button("OK").click()
                     }
@@ -114,4 +124,8 @@ class ChangelistSettingsTest {
                 }
             }
     }
+}
+@com.intellij.driver.client.Remote("javax.swing.AbstractButton")
+interface SwingAbstractButton {
+    fun isSelected(): Boolean
 }
