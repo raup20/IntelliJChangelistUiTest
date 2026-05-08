@@ -18,3 +18,10 @@ The test:
 
 ```bash
 ./gradlew test
+```
+
+On Windows:
+
+```bash
+.\gradlew.bat test
+```
