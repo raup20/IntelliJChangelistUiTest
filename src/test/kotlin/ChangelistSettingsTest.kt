@@ -2,7 +2,6 @@ import com.intellij.driver.sdk.ui.components.common.ideFrame
 import com.intellij.ide.starter.ide.IdeDownloader
 import com.intellij.driver.sdk.waitForIndicators
 import com.intellij.driver.sdk.ui.components.UiComponent.Companion.waitFound
-import com.intellij.driver.sdk.ui.components.common.ideFrame
 import com.intellij.ide.starter.community.IdeByLinkDownloader
 import com.intellij.ide.starter.driver.engine.runIdeWithDriver
 import com.intellij.ide.starter.junit5.hyphenateWithClass
@@ -18,10 +17,23 @@ import org.kodein.di.bind
 import org.kodein.di.singleton
 import com.intellij.ide.starter.di.di
 import org.kodein.di.DI
+import com.intellij.driver.sdk.invokeAction
+import com.intellij.driver.sdk.ui.components.elements.button
+import com.intellij.driver.sdk.ui.components.elements.dialog
+import com.intellij.driver.sdk.ui.components.elements.waitForNoOpenedDialogs
+import com.intellij.driver.sdk.ui.xQuery
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
+import java.awt.event.KeyEvent
+
 
 
 class ChangelistSettingsTest {
-
+    private fun copyToClipboard(text: String) {
+        Toolkit.getDefaultToolkit()
+            .systemClipboard
+            .setContents(StringSelection(text), null)
+    }
     init {
         val baseDi = di
 
@@ -57,11 +69,49 @@ class ChangelistSettingsTest {
             //.setupSdk(jdk21.toSdk())
             .prepareProjectCleanImport()
 
-        testContext.runIdeWithDriver().useDriverAndCloseIde {
-            ideFrame {
+            .runIdeWithDriver().useDriverAndCloseIde {
                 waitForIndicators(5.minutes)
-                waitFound()
+
+                ideFrame {
+                    invokeAction("ShowSettings", now = false)
+
+                    dialog(title = "Settings") {
+                        Thread.sleep(1500)
+
+                        val searchField = x(xQuery {
+                            byType("com.intellij.ui.SearchTextField\$1")
+                        }).waitFound()
+
+                        searchField.click()
+                        Thread.sleep(500)
+
+                        copyToClipboard("changelists")
+
+                        keyboard {
+                            hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_A)
+                            backspace()
+                            hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_V)
+                        }
+
+                        Thread.sleep(1500)
+
+                        val checkboxText = "Create changelists automatically"
+
+                        val checkbox = x(xQuery { byAccessibleName(checkboxText) })
+                            .waitFound()
+
+                        checkbox.click()
+
+                        Thread.sleep(500)
+
+                        x(xQuery { byAccessibleName(checkboxText) })
+                            .waitFound()
+
+                        button("OK").click()
+                    }
+
+                    waitForNoOpenedDialogs()
+                }
             }
-        }
     }
 }
